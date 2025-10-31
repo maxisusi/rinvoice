@@ -4,8 +4,12 @@ use sqlx::{Pool, Sqlite};
 use std::sync::Arc;
 
 mod customers;
+mod errors;
 
 use crate::config::Config;
+use crate::http::errors::Error;
+
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[derive(Clone)]
 pub struct ApiCtx {

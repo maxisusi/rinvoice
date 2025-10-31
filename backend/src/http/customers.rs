@@ -1,4 +1,4 @@
-use anyhow::{Ok, anyhow};
+use anyhow::anyhow;
 use axum::{Extension, Router};
 use axum::{
     Json,
@@ -8,13 +8,14 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-use crate::http::ApiCtx;
+use crate::http::{self, ApiCtx};
 
 pub fn router() -> Router {
     Router::new()
-        .route("/customers", post(create_customer))
         .route("/customers", get(list_customer))
+        .route("/customers/{id}", get(get_customer))
         .route("/customers/{id}", delete(delete_customer))
+        .route("/customers", post(create_customer))
 }
 
 #[derive(Serialize)]
@@ -54,7 +55,7 @@ impl CustomerFromQuery {
 async fn create_customer(
     ctx: Extension<Arc<ApiCtx>>,
     Json(payload): Json<CustomerFromQuery>,
-) -> axum::Json<Customer> {
+) -> http::Result<axum::Json<Customer>> {
     let customer = sqlx::query_as!(
         CustomerFromQuery,
         r#"
@@ -68,17 +69,35 @@ async fn create_customer(
         payload.price_per_hour
     )
     .fetch_one(&ctx.db)
-    .await
-    .unwrap()
-    .try_into_customer()
-    .unwrap();
-    Json(customer)
+    .await?
+    .try_into_customer()?;
+
+    Ok(Json(customer))
+}
+
+#[axum::debug_handler]
+async fn get_customer(
+    ctx: Extension<Arc<ApiCtx>>,
+    Path(customer_id): Path<String>,
+) -> http::Result<axum::Json<Customer>> {
+    let customer = sqlx::query_as!(
+        CustomerFromQuery,
+        r#"
+            SELECT * FROM customers WHERE id == (?)
+        "#,
+        customer_id
+    )
+    .fetch_one(&ctx.db)
+    .await?
+    .try_into_customer()?;
+
+    Ok(Json(customer))
 }
 
 async fn delete_customer(
     ctx: Extension<Arc<ApiCtx>>,
     Path(customer_id): Path<String>,
-) -> axum::Json<Customer> {
+) -> http::Result<axum::Json<Customer>> {
     let customer = sqlx::query_as!(
         CustomerFromQuery,
         r#"
@@ -88,29 +107,24 @@ async fn delete_customer(
         customer_id
     )
     .fetch_one(&ctx.db)
-    .await
-    .unwrap()
-    .try_into_customer()
-    .unwrap();
+    .await?
+    .try_into_customer()?;
 
-    Json(customer)
+    Ok(Json(customer))
 }
 
-async fn list_customer(ctx: Extension<Arc<ApiCtx>>) -> axum::Json<Vec<Customer>> {
-    let customers: Vec<Customer> = sqlx::query_as!(
+async fn list_customer(ctx: Extension<Arc<ApiCtx>>) -> http::Result<axum::Json<Vec<Customer>>> {
+    let customers = sqlx::query_as!(
         CustomerFromQuery,
         r#"
             SELECT * from customers;
         "#,
     )
     .fetch_all(&ctx.db)
-    .await
-    .unwrap()
+    .await?
     .iter_mut()
-    .map(|t| t.try_into_customer().unwrap())
-    .collect();
+    .map(|t| t.try_into_customer())
+    .collect::<anyhow::Result<Vec<Customer>>>()?;
 
-    Json(customers)
+    Ok(Json(customers))
 }
-
-// DB util
