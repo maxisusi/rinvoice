@@ -17,5 +17,6 @@ pkgs.mkShell {
   RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
 
   shellHook = ''alias cw="cargo watch -x run"'';
-  DATABASE_URL = "sqlite://sqlite.db";
+  # DATABASE_URL = "sqlite://sqlite.db";
+  # PORT = "3000";
 }

@@ -1,5 +1,5 @@
 [package]
-name = "backend"
+name = "headless"
 version = "0.1.0"
 edition = "2024"
 
@@ -12,3 +12,6 @@ sqlx = {version = "0.8.6", features= ["macros", "sqlite", "runtime-tokio-native-
 rusqlite = {version =" 0.32.1"}
 tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread"] }
 anyhow = "1.0.100"
+clap = { version = "4.5.51", features = ["derive", "env"] }
+dotenv = "0.15.0"
+tower = "0.5.2"
