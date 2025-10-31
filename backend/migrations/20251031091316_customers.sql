@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS customers 
+(
+    id INTEGER PRIMARY KEY NOT NULL,
+    name VARCHAR(250) NOT NULL,
+    surname VARCHAR(250) NOT NULL,
+    email VARCHAR(250),
+    price_per_hour REAL NOT NULL DEFAULT 0.0
+)
+
+
